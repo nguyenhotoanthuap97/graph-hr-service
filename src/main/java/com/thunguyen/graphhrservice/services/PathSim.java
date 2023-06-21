@@ -30,15 +30,15 @@ public class PathSim {
 
   private static double calculateWeightedSimilarity(int nodeAPos, int nodeBPos, int[][] matrix) {
     if (nodeAPos == nodeBPos) {
-      return 0.0; // If it's the same node => exclude it by setting the sim to 0
+      return -1; // If it's the same node => exclude it by setting the sim to 0
     }
     int ratingNum = matrix[nodeAPos].length;
-    double product = 0.0;
-    double aDiag = 0.0;
-    double bDiag = 0.0;
 
     double simSum = 0.0;
     for (int w = 1; w <= 5; w++) {
+      double product = 0.0;
+      double aDiag = 0.0;
+      double bDiag = 0.0;
       for (int i = 0; i < ratingNum; i++) {
         int aWeightedRating = matrix[nodeAPos][i] == w ? 1 : 0;
         int bWeightedRating = matrix[nodeBPos][i] == w ? 1 : 0;
@@ -47,7 +47,7 @@ public class PathSim {
         int bRating = matrix[nodeBPos][i] != 0 ? 1 : 0;
         double aPow = pow(aRating, 2);
         double bPow = pow(bRating, 2);
-        if (aRating + bRating == 2) {
+        if (bRating == 1) {
           aDiag += aPow;
           bDiag += bPow;
         }
@@ -90,6 +90,7 @@ public class PathSim {
 
   private static List<Integer> getCandidateNodes(int nodeAPos, int[][] matrix, boolean isSparse) {
     List<Integer> candidates = new ArrayList<>();
+
     if (!isSparse) {
       for (int i = 0; i < matrix.length; i++) {
         candidates.add(i);

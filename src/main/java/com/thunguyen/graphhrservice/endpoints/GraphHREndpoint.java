@@ -1,19 +1,18 @@
 package com.thunguyen.graphhrservice.endpoints;
 
-import com.thunguyen.graphhrservice.model.Employee;
-import com.thunguyen.graphhrservice.services.GraphHRService;
-import org.neo4j.driver.Record;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.thunguyen.graphhrservice.models.Employee;
+import com.thunguyen.graphhrservice.services.GraphDBService;
+import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@AllArgsConstructor
+@RequestMapping("/graph")
 public class GraphHREndpoint {
 
-  @Autowired
-  private GraphHRService graphHRService;
+  private final GraphDBService graphHRService;
 
   @GetMapping(value = "/employee")
   @ResponseBody
@@ -33,9 +32,4 @@ public class GraphHREndpoint {
     return graphHRService.getRequire();
   }
 
-  @GetMapping(value = "/sim")
-  @ResponseBody
-  private String getRequires(@RequestParam String employeeId) {
-    return graphHRService.findTopKWeightedPathSim(employeeId);
-  }
 }

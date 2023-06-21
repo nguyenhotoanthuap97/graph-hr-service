@@ -1,22 +1,20 @@
 package com.thunguyen.graphhrservice.services;
 
 import com.thunguyen.graphhrservice.dao.GraphHRDAO;
-import com.thunguyen.graphhrservice.model.Employee;
-import com.thunguyen.graphhrservice.model.Project;
-import com.thunguyen.graphhrservice.model.Skill;
+import com.thunguyen.graphhrservice.models.Employee;
+import com.thunguyen.graphhrservice.models.Project;
+import com.thunguyen.graphhrservice.models.Skill;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Record;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
 @Service
 @AllArgsConstructor
-public class GraphHRService {
+public class GraphDBService {
 
   private final GraphHRDAO graphHRDAO;
 
@@ -36,6 +34,17 @@ public class GraphHRService {
     List<Record> ratingRecords = graphHRDAO.getRatingMatrix();
     List<String> employees = graphHRDAO.getEmployee().stream().map(Employee::getId).toList();
     List<String> skills = graphHRDAO.getSkill().stream().map(Skill::getName).toList();
+    return getRatingMatrix(ratingRecords, employees, skills);
+  }
+
+  public int[][] getRating(String role) {
+    List<Record> ratingRecords = graphHRDAO.getRatingMatrix(role);
+    List<String> employees = graphHRDAO.getEmployee(role).stream().map(Employee::getId).toList();
+    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    return getRatingMatrix(ratingRecords, employees, skills);
+  }
+
+  private static int[][] getRatingMatrix(List<Record> ratingRecords, List<String> employees, List<String> skills) {
     int employeeSize = employees.size();
     int skillSize = skills.size();
     int[][] matrix = new int[employeeSize][skillSize];
@@ -48,16 +57,33 @@ public class GraphHRService {
     for (Record record : ratingRecords) {
       int row = employees.indexOf(record.get("employeeId").asString());
       int col = skills.indexOf(record.get("skillName").asString());
-      matrix[row][col] = Integer.parseInt(record.get("rating").asString());
+      matrix[row][col] = record.get("rating").asInt();
     }
 
     return matrix;
+  }
+
+  public int[][] getFullRating() {
+    int[][] ratingMatrix = getRating();
+    int[][] requireMatrix = getRequire();
+    return getCombineMatrix(requireMatrix, ratingMatrix);
   }
 
   public int[][] getRequire() {
     List<Record> requireRecords = graphHRDAO.getRequireMatrix();
     List<String> projects = graphHRDAO.getProject().stream().map(Project::getName).toList();
     List<String> skills = graphHRDAO.getSkill().stream().map(Skill::getName).toList();
+    return getRequireMatrix(requireRecords, projects, skills);
+  }
+
+  public int[][] getRequire(String role) {
+    List<Record> requireRecords = graphHRDAO.getRequireMatrix(role);
+    List<String> projects = graphHRDAO.getProject().stream().map(Project::getName).toList();
+    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    return getRequireMatrix(requireRecords, projects, skills);
+  }
+
+  private static int[][] getRequireMatrix(List<Record> requireRecords, List<String> projects, List<String> skills) {
     int projectSize = projects.size();
     int skillSize = skills.size();
     int[][] matrix = new int[projectSize][skillSize];
@@ -71,15 +97,14 @@ public class GraphHRService {
     for (Record record : requireRecords) {
       int row = projects.indexOf(record.get("teamName").asString());
       int col = skills.indexOf(record.get("skillName").asString());
-      matrix[row][col] = Integer.parseInt(record.get("rating").asString());
+      matrix[row][col] = record.get("rating").asInt();
     }
 
     return matrix;
   }
 
-  public int[][] getFullRating() {
-    int[][] requireMatrix = getRequire();
-    int[][] ratingMatrix = getRating();
+
+  private static int[][] getCombineMatrix(int[][] requireMatrix, int[][] ratingMatrix) {
     int skillNum = requireMatrix[0].length;
     int employeeNum = ratingMatrix.length;
     int projectNum = requireMatrix.length;
@@ -95,22 +120,9 @@ public class GraphHRService {
     return fullMatrix;
   }
 
-  public String findTopKWeightedPathSim(String employee) {
-    int[][] matrix = getFullRating();
-    List<String> employees = graphHRDAO.getEmployee().stream().map(Employee::getId).toList();
-    List<String> projects = graphHRDAO.getProject().stream().map(Project::getName).toList();
-
-    int ePos = employees.indexOf(employee);
-    double[] sims = PathSim.getWeightedSimilarityList(ePos, matrix, true);
-    List<Double> simList = new java.util.ArrayList<>(Arrays.stream(sims).boxed().toList());
-    List<Double> projectSimList = simList.subList(employees.size(), simList.size());
-    List<Double> sortedSimList = new java.util.ArrayList<>(new java.util.ArrayList<>(projectSimList.stream().toList()).stream().sorted().toList());
-    Collections.reverse(sortedSimList);
-    int first = projectSimList.indexOf(sortedSimList.get(0));
-    int second = projectSimList.indexOf(sortedSimList.get(1));
-    int third = projectSimList.indexOf(sortedSimList.get(2));
-    log.info("Mem: {}", employees.get(ePos));
-    log.info("   I: {}, II: {}, III: {}", projects.get(first), projects.get(second), projects.get(third));
-    return "Mem: " + employees.get(ePos) + "   I: " + projects.get(first) + ", II: " + projects.get(second) + ", III: " + projects.get(third);
+  public int[][] getFullRating(String role) {
+    int[][] ratingMatrix = getRating(role);
+    int[][] requireMatrix = getRequire(role);
+    return getCombineMatrix(requireMatrix, ratingMatrix);
   }
 }

@@ -1,12 +1,13 @@
-package com.thunguyen.graphhrservice.model;
+package com.thunguyen.graphhrservice.models;
 
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class Project {
+public class Employee {
 
     private String id;
     private String name;
+    private String title;
 }
