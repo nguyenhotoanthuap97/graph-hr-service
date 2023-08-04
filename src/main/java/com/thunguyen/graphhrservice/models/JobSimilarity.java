@@ -5,8 +5,8 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ProjectSimilarity {
+public class JobSimilarity {
   private String employeeId;
-  private String projectName;
+  private String jobId;
   private Double score;
 }

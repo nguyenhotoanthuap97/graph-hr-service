@@ -1,6 +1,7 @@
 package com.thunguyen.graphhrservice.endpoints;
 
 import com.thunguyen.graphhrservice.models.Employee;
+import com.thunguyen.graphhrservice.models.Job;
 import com.thunguyen.graphhrservice.services.GraphDBService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,12 @@ public class GraphHREndpoint {
   @ResponseBody
   private int[][] getRequires() {
     return graphHRService.getRequire();
+  }
+
+  @GetMapping(value = "/job")
+  @ResponseBody
+  private List<Job> getJob() {
+    return graphHRService.getJob();
   }
 
 }

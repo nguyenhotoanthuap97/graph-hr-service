@@ -4,21 +4,18 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import javax.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
 @Setter
-@Entity
 @NoArgsConstructor
 @Builder
-@Table(name = "similarity")
+@Document("similarity")
 public class Similarity {
 
-  @EmbeddedId
+  @Id
   private SimilarityId similarityId;
-
-  @Column(name = "sim_score")
   private Double simScore;
 
   public Similarity(SimilarityId similarityId, Double simScore) {

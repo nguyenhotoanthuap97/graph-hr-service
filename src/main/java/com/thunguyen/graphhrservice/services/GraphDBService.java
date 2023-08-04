@@ -2,6 +2,7 @@ package com.thunguyen.graphhrservice.services;
 
 import com.thunguyen.graphhrservice.dao.GraphHRDAO;
 import com.thunguyen.graphhrservice.models.Employee;
+import com.thunguyen.graphhrservice.models.Job;
 import com.thunguyen.graphhrservice.models.Project;
 import com.thunguyen.graphhrservice.models.Skill;
 import lombok.AllArgsConstructor;
@@ -28,6 +29,12 @@ public class GraphDBService {
     List<Project> projects = graphHRDAO.getProject();
     log.info("Projects: {}", projects);
     return projects;
+  }
+
+  public List<Job> getJob() {
+    List<Job> jobs = graphHRDAO.getJob();
+    log.info("Jobs: {}", jobs);
+    return jobs;
   }
 
   public int[][] getRating() {
@@ -71,31 +78,31 @@ public class GraphDBService {
 
   public int[][] getRequire() {
     List<Record> requireRecords = graphHRDAO.getRequireMatrix();
-    List<String> projects = graphHRDAO.getProject().stream().map(Project::getName).toList();
+    List<Integer> jobs = graphHRDAO.getJob().stream().map(Job::getJobId).toList();
     List<String> skills = graphHRDAO.getSkill().stream().map(Skill::getName).toList();
-    return getRequireMatrix(requireRecords, projects, skills);
+    return getRequireMatrix(requireRecords, jobs, skills);
   }
 
   public int[][] getRequire(String role) {
     List<Record> requireRecords = graphHRDAO.getRequireMatrix(role);
-    List<String> projects = graphHRDAO.getProject().stream().map(Project::getName).toList();
+    List<Integer> jobs = graphHRDAO.getJob().stream().map(Job::getJobId).toList();
     List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
-    return getRequireMatrix(requireRecords, projects, skills);
+    return getRequireMatrix(requireRecords, jobs, skills);
   }
 
-  private static int[][] getRequireMatrix(List<Record> requireRecords, List<String> projects, List<String> skills) {
-    int projectSize = projects.size();
+  private static int[][] getRequireMatrix(List<Record> requireRecords, List<Integer> jobs, List<String> skills) {
+    int jobSize = jobs.size();
     int skillSize = skills.size();
-    int[][] matrix = new int[projectSize][skillSize];
+    int[][] matrix = new int[jobSize][skillSize];
 
-    for (int i = 0; i < projectSize; i++) {
+    for (int i = 0; i < jobSize; i++) {
       for (int j = 0; j < skillSize; j++) {
         matrix[i][j] = 0;
       }
     }
 
     for (Record record : requireRecords) {
-      int row = projects.indexOf(record.get("teamName").asString());
+      int row = jobs.indexOf(record.get("jobId").asInt());
       int col = skills.indexOf(record.get("skillName").asString());
       matrix[row][col] = record.get("rating").asInt();
     }
@@ -107,13 +114,13 @@ public class GraphDBService {
   private static int[][] getCombineMatrix(int[][] requireMatrix, int[][] ratingMatrix) {
     int skillNum = requireMatrix[0].length;
     int employeeNum = ratingMatrix.length;
-    int projectNum = requireMatrix.length;
-    int[][] fullMatrix = new int[employeeNum + projectNum][skillNum];
+    int jobNum = requireMatrix.length;
+    int[][] fullMatrix = new int[employeeNum + jobNum][skillNum];
     for (int i = 0; i < employeeNum; i++) {
       System.arraycopy(ratingMatrix[i], 0, fullMatrix[i], 0, skillNum);
     }
 
-    for (int i = employeeNum; i < employeeNum + projectNum; i++) {
+    for (int i = employeeNum; i < employeeNum + jobNum; i++) {
       System.arraycopy(requireMatrix[i - employeeNum], 0, fullMatrix[i], 0, skillNum);
     }
 

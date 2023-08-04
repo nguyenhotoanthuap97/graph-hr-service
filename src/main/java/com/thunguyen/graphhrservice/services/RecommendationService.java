@@ -31,35 +31,36 @@ public class RecommendationService {
   }
 
   private List<Similarity> buildSimMatrixForRole(String role) {
-    List<String> projects = graphHRDAO.getProject().stream().map(Project::getName).toList();
+    List<Integer> jobs = graphHRDAO.getJob().stream().map(Job::getJobId).toList();
     List<String> employees = graphHRDAO.getEmployee(role).stream().map(Employee::getId).toList();
     int[][] matrix = graphDBService.getFullRating(role);
     int skillNum = matrix[0].length;
-    int projectNum = projects.size();
+    int jobNum = jobs.size();
     int employeeNum = employees.size();
-    List<Similarity> projectSimilarities = new ArrayList<>();
+    List<Similarity> jobSimilarities = new ArrayList<>();
     employees.forEach(employee -> {
       log.info("Calculate for employee: {}", employee);
       int ePos = employees.indexOf(employee);
-      int[][] subMatrix = new int[projectNum + 1][matrix[0].length];
+      int[][] subMatrix = new int[jobNum + 1][matrix[0].length];
 
       System.arraycopy(matrix[ePos], 0, subMatrix[0], 0, skillNum); // Add employee's rate matrix
-      for (int i = 0; i < projects.size(); i++) { // Add all project's require matrix
+      for (int i = 0; i < jobs.size(); i++) { // Add all job's require matrix
         System.arraycopy(matrix[employeeNum + i], 0, subMatrix[i + 1], 0, skillNum);
       }
       double[] sims = PathSim.getWeightedSimilarityList(0, subMatrix, true);
       for (int i = 1; i < sims.length; i++) {
-        Similarity projectSimilarity = Similarity.builder()
-            .similarityId(new SimilarityId(employee, projects.get(i - 1)))
+        Similarity jobSimilarity = Similarity.builder()
+            .similarityId(new SimilarityId(employee, jobs.get(i - 1)))
             .simScore(sims[i]).build();
-        projectSimilarities.add(projectSimilarity);
+        if (jobSimilarity.getSimScore() > 0) {
+          jobSimilarities.add(jobSimilarity);
+        }
       }
     });
-    return projectSimilarities;
+    return jobSimilarities;
   }
 
   public void startOfflineCalculating() {
-    List<String> employeeIds = graphHRDAO.getEmployee().stream().map(Employee::getId).toList();
     log.info("Offline calculation START");
     buildSimOfflineMatrix();
     log.info("Offline calculation DONE");
@@ -68,14 +69,14 @@ public class RecommendationService {
   public void calculateEmployeePathSimScores(String employeeId) {
     int[][] matrix = graphDBService.getFullRating();
     List<String> employees = graphHRDAO.getEmployee().stream().map(Employee::getId).toList();
-    List<String> projects = graphHRDAO.getProject().stream().map(Project::getName).toList();
+    List<Integer> jobs = graphHRDAO.getJob().stream().map(Job::getJobId).toList();
 
     int ePos = employees.indexOf(employeeId);
     double[] sims = PathSim.getWeightedSimilarityList(ePos, matrix, true);
     List<Double> simList = new java.util.ArrayList<>(Arrays.stream(sims).boxed().toList());
     List<Double> projectSimList = simList.subList(employees.size(), simList.size());
     for (int i = 0; i < projectSimList.size(); i++) {
-      Similarity similarity = new Similarity(new SimilarityId(employeeId, projects.get(i)), projectSimList.get(i));
+      Similarity similarity = new Similarity(new SimilarityId(employeeId, jobs.get(i)), projectSimList.get(i));
       simGraphDAO.saveSimilarityScore(similarity);
     }
   }

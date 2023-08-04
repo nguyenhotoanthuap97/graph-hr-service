@@ -28,8 +28,8 @@ public class SimilarityEndpoint {
     return recommendationService.getRecommendedProjectsForEmployee(employeeId);
   }
 
-  @GetMapping(value = "/evaluate")
-  public void evaluate() {
-    evaluateService.validateSimilarity();
-  }
+//  @GetMapping(value = "/evaluate")
+//  public void evaluate() {
+//    evaluateService.validateSimilarity();
+//  }
 }

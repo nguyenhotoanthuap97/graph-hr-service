@@ -1,9 +1,6 @@
 package com.thunguyen.graphhrservice.dao;
 
-import com.thunguyen.graphhrservice.models.Employee;
-import com.thunguyen.graphhrservice.models.Project;
-import com.thunguyen.graphhrservice.models.Role;
-import com.thunguyen.graphhrservice.models.Skill;
+import com.thunguyen.graphhrservice.models.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.springframework.stereotype.Component;
@@ -128,6 +125,27 @@ public class GraphHRDAO {
     }
   }
 
+  public List<Job> getJob() {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query = """
+          match (j:Job)
+          return j.jobId as jobId, j.jobName as jobName
+          order by j.jobId""";
+      Value params = Values.parameters();
+
+      List<Record> jobRecords = session.run(query, params).list();
+      List<Job> jobs = new ArrayList<>();
+      for (Record record : jobRecords) {
+        Job job = Job.builder()
+            .jobId(record.get("jobId").asInt())
+            .jobName(record.get("jobName").asString())
+            .build();
+        jobs.add(job);
+      }
+      return jobs;
+    }
+  }
+
   public List<Record> getRatingMatrix() {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
@@ -159,9 +177,9 @@ public class GraphHRDAO {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
           """
-              match (t:Team)-[r:REQUIRES]->(s:Skill)
-              return t.teamName as teamName, s.name as skillName, r.rating as rating
-              order by t.teamName, s.name""";
+              match (j:Job)-[r:REQUIRES]->(s:Skill)
+              return j.jobId as jobId, s.name as skillName, r.rating as rating
+              order by j.jobId, s.name""";
       Value params = Values.parameters();
       return session.run(query, params).list();
     }
@@ -170,9 +188,9 @@ public class GraphHRDAO {
   public List<Record> getRequireMatrix(String role) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
-          "  match (t:Team)-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role + "\"})\n" +
-              "      return t.teamName as teamName, s.name as skillName, r.rating as rating\n" +
-              "  order by t.teamName, s.name";
+          "  match (j:Job)-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role + "\"})\n" +
+              "      return j.jobId as jobId, s.name as skillName, r.rating as rating\n" +
+              "  order by j.jobId, s.name";
       Value params = Values.parameters();
       return session.run(query, params).list();
     }
@@ -196,14 +214,14 @@ public class GraphHRDAO {
     }
   }
 
-  public Integer getMatchedRatingCount(String employeeId, String teamName) {
+  public Integer getMatchedRatingCount(String employeeId, Integer jobId) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
           "match (e:Employee {employeeId: \"" + employeeId + "\"})-[]->(ro:Role)\n" +
               "with e, ro\n" +
               "match (e)-[r:RATES]->(s:Skill)-[]->(ro)\n" +
               "with e, r, s\n" +
-              "match (p:Team {teamName: \"" + teamName + "\"})-[re:REQUIRES]->(s)\n" +
+              "match (p:Job {jobId: \"" + jobId + "\"})-[re:REQUIRES]->(s)\n" +
               "where r.rating = re.rating\n" +
               "return count(r) as c";
 
@@ -212,13 +230,13 @@ public class GraphHRDAO {
     }
   }
 
-  public Integer getRequiredSkillCount(String employeeId, String teamName) {
+  public Integer getRequiredSkillCount(String employeeId, Integer jobId) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
           "match (e:Employee {employeeId: \"" + employeeId + "\"})-[]->(r:Role)\n" +
-          "with e, r\n" +
-          "match (p:Team {teamName: \"" + teamName + "\"})-[re:REQUIRES]->(sk:Skill)-[]->(r)\n" +
-          "return count(re) as c";
+              "with e, r\n" +
+              "match (p:Job {jobId: \"" + jobId + "\"})-[re:REQUIRES]->(sk:Skill)-[]->(r)\n" +
+              "return count(re) as c";
 
       Value params = Values.parameters();
       return session.run(query, params).list().get(0).get("c").asInt();
