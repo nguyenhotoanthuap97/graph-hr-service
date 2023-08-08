@@ -1,0 +1,16 @@
+graph:
+  db:
+    username: neo4j
+    uri:
+    password:
+
+mongo-hr:
+  offline-sim-db-url: "mongodb://localhost:27017"
+  offline-sim-db-name: "graph_hr"
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  jpa:
+    hibernate:
+      ddl-auto: update

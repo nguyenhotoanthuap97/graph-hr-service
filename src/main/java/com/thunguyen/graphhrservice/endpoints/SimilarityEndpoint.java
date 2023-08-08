@@ -1,12 +1,14 @@
 package com.thunguyen.graphhrservice.endpoints;
 
 import com.thunguyen.graphhrservice.models.Similarity;
-import com.thunguyen.graphhrservice.services.EvaluateService;
 import com.thunguyen.graphhrservice.services.RecommendationService;
-import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @AllArgsConstructor
@@ -14,7 +16,12 @@ import java.util.List;
 public class SimilarityEndpoint {
 
   private final RecommendationService recommendationService;
-  private final EvaluateService evaluateService;
+
+  @GetMapping(value = "/process/improved-offline")
+  @ResponseBody
+  public void triggerImprovedOfflineCalculating() {
+    recommendationService.startImprovedOfflineCalculating();
+  }
 
   @GetMapping(value = "/process/offline")
   @ResponseBody
@@ -22,14 +29,16 @@ public class SimilarityEndpoint {
     recommendationService.startOfflineCalculating();
   }
 
-  @GetMapping(value = "/employee/{employeeId}")
+  @GetMapping(value = "/process/pearson-offline")
   @ResponseBody
-  public List<Similarity> getEmployeeRecommendedProjects(@PathVariable(value = "employeeId") String employeeId) {
-    return recommendationService.getRecommendedProjectsForEmployee(employeeId);
+  public void triggerPearsonOfflineCalculating() {
+    recommendationService.startPearsonOfflineCalculating();
   }
 
-//  @GetMapping(value = "/evaluate")
-//  public void evaluate() {
-//    evaluateService.validateSimilarity();
-//  }
+  @GetMapping(value = "/employee/{employeeId}")
+  @ResponseBody
+  public List<Similarity> getEmployeeRecommendedProjects(
+      @PathVariable(value = "employeeId") String employeeId) {
+    return recommendationService.getRecommendedProjectsForEmployee(employeeId);
+  }
 }

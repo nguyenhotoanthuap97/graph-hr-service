@@ -85,7 +85,7 @@ public class GraphDBService {
 
   public int[][] getRequire(String role) {
     List<Record> requireRecords = graphHRDAO.getRequireMatrix(role);
-    List<Integer> jobs = graphHRDAO.getJob().stream().map(Job::getJobId).toList();
+    List<Integer> jobs = graphHRDAO.getJob(role).stream().map(Job::getJobId).toList();
     List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
     return getRequireMatrix(requireRecords, jobs, skills);
   }

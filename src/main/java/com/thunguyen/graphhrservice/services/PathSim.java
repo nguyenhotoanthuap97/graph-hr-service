@@ -28,12 +28,11 @@ public class PathSim {
     return 2 * product / (aDiag + bDiag);
   }
 
-  private static double calculateWeightedSimilarity(int nodeAPos, int nodeBPos, int[][] matrix) {
+  private static double calculateImprovedWeightedSimilarity(int nodeAPos, int nodeBPos, int[][] matrix) {
     if (nodeAPos == nodeBPos) {
       return -1; // If it's the same node => exclude it by setting the sim to 0
     }
     int ratingNum = matrix[nodeAPos].length;
-
     double simSum = 0.0;
     for (int w = 1; w <= 5; w++) {
       double product = 0.0;
@@ -58,6 +57,34 @@ public class PathSim {
     return simSum;
   }
 
+  private static double calculateWeightedSimilarity(int nodeAPos, int nodeBPos, int[][] matrix) {
+    if (nodeAPos == nodeBPos) {
+      return -1; // If it's the same node => exclude it by setting the sim to -1
+    }
+    int ratingNum = matrix[nodeAPos].length;
+
+    double simSum = 0.0;
+    for (int w = 1; w <= 5; w++) {
+      double product = 0.0;
+      double aDiag = 0.0;
+      double bDiag = 0.0;
+      for (int i = 0; i < ratingNum; i++) {
+        int aWeightedRating = matrix[nodeAPos][i] == w ? 1 : 0;
+        int bWeightedRating = matrix[nodeBPos][i] == w ? 1 : 0;
+        product += aWeightedRating * bWeightedRating;
+        int aRating = matrix[nodeAPos][i] != 0 ? 1 : 0;
+        int bRating = matrix[nodeBPos][i] != 0 ? 1 : 0;
+        double aPow = pow(aRating, 2);
+        double bPow = pow(bRating, 2);
+        aDiag += aPow;
+        bDiag += bPow;
+      }
+      simSum += 2 * product / (aDiag + bDiag);
+    }
+
+    return simSum;
+  }
+
   public static double[] getSimilarityList(int nodeAPos, int[][] matrix, boolean isSparse) {
     double[] sims = initSims(matrix);
 
@@ -71,9 +98,15 @@ public class PathSim {
 
   private static double[] initSims(int[][] matrix) {
     int nodeNum = matrix.length;
-    double[] sims = new double[nodeNum];
-    for (int i = 0; i < nodeNum; i++) {
-      sims[i] = 0.0;
+    return new double[nodeNum];
+  }
+
+  public static double[] getImprovedWeightedSimilarityList(int nodeAPos, int[][] matrix, boolean isSparse) {
+    double[] sims = initSims(matrix);
+
+    List<Integer> candidates = getCandidateNodes(nodeAPos, matrix, isSparse);
+    for (Integer candidatePos : candidates) {
+      sims[candidatePos] = calculateImprovedWeightedSimilarity(nodeAPos, candidatePos, matrix);
     }
     return sims;
   }

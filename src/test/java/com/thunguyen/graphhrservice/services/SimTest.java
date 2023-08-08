@@ -34,7 +34,7 @@ public class SimTest {
         {1, 0, 1, 2, 3, 3}
     };
 
-    double[] sims = PathSim.getWeightedSimilarityList(3, adjMatrix, true);
+    double[] sims = PathSim.getImprovedWeightedSimilarityList(3, adjMatrix, true);
     System.out.println("Weighted PathSim: ");
     for (int i = 0; i < sims.length; i++) {
       System.out.println("  Sim(3," + i + "): " + sims[i]);

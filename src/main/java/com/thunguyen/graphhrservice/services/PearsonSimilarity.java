@@ -1,10 +1,9 @@
 package com.thunguyen.graphhrservice.services;
 
-import java.util.Arrays;
-import java.util.List;
-
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
+
+import java.util.Arrays;
 
 public class PearsonSimilarity {
 
@@ -47,9 +46,6 @@ public class PearsonSimilarity {
   public static double[] getPearsonSimilarities(int nodeAPos, int[][] matrix) {
     int nodeNum = matrix.length;
     double[] sims = new double[nodeNum];
-    for (int i = 0; i < nodeNum; i++) {
-      sims[i] = 0.0;
-    }
 
     for (int i = 0; i < nodeNum; i++) {
       sims[i] = calculateSimilarity(nodeAPos, i, matrix);

@@ -9,4 +9,5 @@ public class Job {
 
   private Integer jobId;
   private String jobName;
+  private String roleName;
 }

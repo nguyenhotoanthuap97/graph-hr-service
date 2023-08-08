@@ -1,12 +1,20 @@
 package com.thunguyen.graphhrservice.dao;
 
-import com.thunguyen.graphhrservice.models.*;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.*;
-import org.springframework.stereotype.Component;
-
+import com.thunguyen.graphhrservice.models.Employee;
+import com.thunguyen.graphhrservice.models.Job;
+import com.thunguyen.graphhrservice.models.Project;
+import com.thunguyen.graphhrservice.models.Role;
+import com.thunguyen.graphhrservice.models.Skill;
 import java.util.ArrayList;
 import java.util.List;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.springframework.stereotype.Component;
 
 @Component
 public class GraphHRDAO {
@@ -146,6 +154,28 @@ public class GraphHRDAO {
     }
   }
 
+  public List<Job> getJob(String role) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "match (j:Job {roleName: \"" + role + "\"})\n" +
+              "return j.jobId as jobId, j.jobName as jobName\n" +
+              "order by j.jobId";
+      Value params = Values.parameters();
+
+      List<Record> jobRecords = session.run(query, params).list();
+      List<Job> jobs = new ArrayList<>();
+      for (Record record : jobRecords) {
+        Job job = Job.builder()
+            .jobId(record.get("jobId").asInt())
+            .jobName(record.get("jobName").asString())
+            .roleName(record.get("roleName").asString())
+            .build();
+        jobs.add(job);
+      }
+      return jobs;
+    }
+  }
+
   public List<Record> getRatingMatrix() {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
@@ -188,7 +218,8 @@ public class GraphHRDAO {
   public List<Record> getRequireMatrix(String role) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
-          "  match (j:Job)-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role + "\"})\n" +
+          "  match (j:Job {roleName: \"" + role
+              + "\"})-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role + "\"})\n" +
               "      return j.jobId as jobId, s.name as skillName, r.rating as rating\n" +
               "  order by j.jobId, s.name";
       Value params = Values.parameters();
