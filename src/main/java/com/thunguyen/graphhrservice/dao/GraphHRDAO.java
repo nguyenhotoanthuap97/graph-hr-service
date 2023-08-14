@@ -214,8 +214,7 @@ public class GraphHRDAO {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query = "match (j:Job {jobId: " + jobId + "})-[r:REQUIRES]->(s:Skill) \n" +
           "return j.jobId as jobId, j.jobName as jobName, r.rating as rating, s.name as skillName \n"
-          +
-          "order by j.jobId";
+          + "order by j.jobId";
       Value params = Values.parameters();
 
       List<Record> requirementRecords = session.run(query, params).list();
@@ -228,6 +227,27 @@ public class GraphHRDAO {
         requirements.add(requirement);
       }
       return requirements;
+    }
+  }
+
+  public List<Map<String, String>> getEmployeeRating(String employeeId) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "match (e:Employee {employeeId: \"" + employeeId + "\"})-[r:RATES]->(s:Skill)\n"
+              + "return e.employeeId as employeeId, e.name as employeeName, r.rating as rating, s.name as skillName\n"
+              + "order by s.name";
+      Value params = Values.parameters();
+      List<Record> ratingRecords = session.run(query, params).list();
+      List<Map<String, String>> ratings = new ArrayList<>();
+      for (Record record : ratingRecords) {
+        Map<String, String> rating = new HashMap<>();
+        rating.put("employeeId", record.get("employeeId").asString());
+        rating.put("employeeName", record.get("employeeName").asString());
+        rating.put("rating", Integer.toString(record.get("rating").asInt()));
+        rating.put("skillName", record.get("skillName").asString());
+        ratings.add(rating);
+      }
+      return ratings;
     }
   }
 
@@ -249,6 +269,26 @@ public class GraphHRDAO {
         jobs.add(job);
       }
       return jobs;
+    }
+  }
+
+  public Job getJobInfoByJobId(Integer jobId) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query = "match (j:Job {jobId: " + jobId + "})-[]->(t:Team)-[]->(b:BusinessUnit) \n"
+      + "return j.jobId as jobId, j.jobName as jobName, t.teamName as teamName, b.name as buName \n"
+      + "order by j.jobId";
+      Value params = Values.parameters();
+
+      List<Record> jobRecords = session.run(query, params).list();
+      for (Record record : jobRecords) {
+        return Job.builder()
+            .jobId(record.get("jobId").asInt())
+            .jobName(record.get("jobName").asString())
+            .teamName(record.get("teamName").asString())
+            .buName(record.get("buName").asString())
+            .build();
+      }
+      return null;
     }
   }
 

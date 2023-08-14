@@ -1,7 +1,7 @@
 package com.thunguyen.graphhrservice.endpoints;
 
 import com.thunguyen.graphhrservice.models.Employee;
-import com.thunguyen.graphhrservice.models.Similarity;
+import com.thunguyen.graphhrservice.models.Job;
 import com.thunguyen.graphhrservice.services.RecommendationService;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -40,9 +40,9 @@ public class SimilarityEndpoint {
 
   @GetMapping(value = "/employee/{employeeId}")
   @ResponseBody
-  public List<Similarity> getEmployeeRecommendedProjects(
+  public List<Job> getEmployeeRecommendedJob(
       @PathVariable(value = "employeeId") String employeeId) {
-    return recommendationService.getRecommendedProjectsForEmployee(employeeId);
+    return recommendationService.getRecommendedProjectsForEmployee(employeeId, 20);
   }
 
   @GetMapping(value = "/job/{jobId}")

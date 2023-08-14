@@ -140,12 +140,16 @@ public class RecommendationService {
     log.info("Offline Pearson calculation DONE");
   }
 
-  public List<Similarity> getRecommendedProjectsForEmployee(String employeeId) {
+  public List<Job> getRecommendedProjectsForEmployee(String employeeId, int recommendSize) {
     List<Similarity> sortedSimilarities = simGraphDAO.getSimilaritiesForEmployeeId(employeeId)
         .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
         .toList();
-
-    return sortedSimilarities.subList(0, 3);
+    int size = Math.min(sortedSimilarities.size(), recommendSize);
+    List<Similarity> topK = sortedSimilarities.subList(0, size);
+    List<Job> response = topK.stream()
+        .map(sim -> graphHRDAO.getJobInfoByJobId(sim.getSimilarityId().getJobId()))
+        .toList();
+    return response;
   }
 
   public List<Employee> getRecommendedEmployeesForJob(Integer jobId, int recommendSize) {
@@ -153,7 +157,9 @@ public class RecommendationService {
         .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
         .toList();
 
-    List<Similarity> topK = sortedSimilarities.subList(0, recommendSize);
+    int size = Math.min(sortedSimilarities.size(), recommendSize);
+
+    List<Similarity> topK = sortedSimilarities.subList(0, size);
     List<Employee> response = new ArrayList<>();
     topK.forEach(sim -> {
       Employee employee = graphHRDAO.getEmployeeInfoById(sim.getSimilarityId().getEmployeeId());

@@ -10,4 +10,6 @@ public class Job {
   private Integer jobId;
   private String jobName;
   private String roleName;
+  private String teamName;
+  private String buName;
 }

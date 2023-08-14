@@ -52,6 +52,12 @@ public class GraphHREndpoint {
     return graphHRDAO.getJobRequirement(jobId);
   }
 
+  @GetMapping(value = "/employee/rating")
+  @ResponseBody
+  private List<Map<String, String>> getEmployeeRating(@RequestParam() String employeeId) {
+    return graphHRDAO.getEmployeeRating(employeeId);
+  }
+
   @GetMapping(value = "/team")
   @ResponseBody
   private List<Project> getProject() {
