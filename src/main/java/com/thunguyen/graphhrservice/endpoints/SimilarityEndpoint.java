@@ -1,15 +1,18 @@
 package com.thunguyen.graphhrservice.endpoints;
 
+import com.thunguyen.graphhrservice.models.Employee;
 import com.thunguyen.graphhrservice.models.Similarity;
 import com.thunguyen.graphhrservice.services.RecommendationService;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+@CrossOrigin
 @RestController
 @AllArgsConstructor
 @RequestMapping("/recommend")
@@ -40,5 +43,11 @@ public class SimilarityEndpoint {
   public List<Similarity> getEmployeeRecommendedProjects(
       @PathVariable(value = "employeeId") String employeeId) {
     return recommendationService.getRecommendedProjectsForEmployee(employeeId);
+  }
+
+  @GetMapping(value = "/job/{jobId}")
+  @ResponseBody
+  public List<Employee> getJobRecommendedEmployee(@PathVariable(value = "jobId") Integer jobId) {
+    return recommendationService.getRecommendedEmployeesForJob(jobId, 20);
   }
 }

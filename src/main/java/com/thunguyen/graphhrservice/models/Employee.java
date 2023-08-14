@@ -10,4 +10,10 @@ public class Employee {
     private String id;
     private String name;
     private String title;
+    private String address;
+    private String sex;
+    private String sibn;
+    private String pit;
+    private String dateOfBirth;
+    private String superiorName;
 }

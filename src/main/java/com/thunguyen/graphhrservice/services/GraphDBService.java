@@ -5,6 +5,8 @@ import com.thunguyen.graphhrservice.models.Employee;
 import com.thunguyen.graphhrservice.models.Job;
 import com.thunguyen.graphhrservice.models.Project;
 import com.thunguyen.graphhrservice.models.Skill;
+import java.util.Map;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Record;
@@ -20,8 +22,8 @@ public class GraphDBService {
   private final GraphHRDAO graphHRDAO;
 
   public List<Employee> getEmployee() {
-    List<Employee> employees = graphHRDAO.getEmployee();
-    log.info("Employees: {}", employees);
+    List<Employee> employees = graphHRDAO.getEmployeeInfo();
+    log.info("Get Employees!");
     return employees;
   }
 
@@ -31,8 +33,19 @@ public class GraphDBService {
     return projects;
   }
 
-  public List<Job> getJob() {
-    List<Job> jobs = graphHRDAO.getJob();
+  public List<Map<String, String>> getProjectInfo() {
+    List<Map<String, String>> projects = graphHRDAO.getProjectInfo();
+    log.info("Projects info: {}", projects);
+    return projects;
+  }
+
+  public List<Job> getJob(String teamName) {
+    List<Job> jobs;
+    if (Objects.isNull(teamName)) {
+      jobs = graphHRDAO.getJob();
+    } else {
+      jobs = graphHRDAO.getJobByTeam(teamName);
+    }
     log.info("Jobs: {}", jobs);
     return jobs;
   }
@@ -131,5 +144,9 @@ public class GraphDBService {
     int[][] ratingMatrix = getRating(role);
     int[][] requireMatrix = getRequire(role);
     return getCombineMatrix(requireMatrix, ratingMatrix);
+  }
+
+  public void addJob(Map<String, String> addRequest) {
+
   }
 }

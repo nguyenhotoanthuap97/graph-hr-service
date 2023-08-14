@@ -144,6 +144,22 @@ public class RecommendationService {
     List<Similarity> sortedSimilarities = simGraphDAO.getSimilaritiesForEmployeeId(employeeId)
         .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
         .toList();
+
     return sortedSimilarities.subList(0, 3);
+  }
+
+  public List<Employee> getRecommendedEmployeesForJob(Integer jobId, int recommendSize) {
+    List<Similarity> sortedSimilarities = simGraphDAO.getSimilaritiesForJobId(jobId)
+        .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
+        .toList();
+
+    List<Similarity> topK = sortedSimilarities.subList(0, recommendSize);
+    List<Employee> response = new ArrayList<>();
+    topK.forEach(sim -> {
+      Employee employee = graphHRDAO.getEmployeeInfoById(sim.getSimilarityId().getEmployeeId());
+      response.add(employee);
+    });
+
+    return response;
   }
 }

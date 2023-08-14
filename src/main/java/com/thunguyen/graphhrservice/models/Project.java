@@ -7,6 +7,5 @@ import lombok.Data;
 @Builder
 public class Project {
 
-    private String id;
     private String name;
 }
