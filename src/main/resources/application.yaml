@@ -14,3 +14,5 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+ui-uri: http://ec2-3-133-161-239.us-east-2.compute.amazonaws.com:3000

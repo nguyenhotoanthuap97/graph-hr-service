@@ -1,6 +1,7 @@
 package com.thunguyen.graphhrservice.dao;
 
 import com.thunguyen.graphhrservice.models.Employee;
+import com.thunguyen.graphhrservice.models.EmployeeDto;
 import com.thunguyen.graphhrservice.models.Job;
 import com.thunguyen.graphhrservice.models.Project;
 import com.thunguyen.graphhrservice.models.Role;
@@ -275,8 +276,8 @@ public class GraphHRDAO {
   public Job getJobInfoByJobId(Integer jobId) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query = "match (j:Job {jobId: " + jobId + "})-[]->(t:Team)-[]->(b:BusinessUnit) \n"
-      + "return j.jobId as jobId, j.jobName as jobName, t.teamName as teamName, b.name as buName \n"
-      + "order by j.jobId";
+          + "return j.jobId as jobId, j.jobName as jobName, t.teamName as teamName, b.name as buName \n"
+          + "order by j.jobId";
       Value params = Values.parameters();
 
       List<Record> jobRecords = session.run(query, params).list();
@@ -303,6 +304,9 @@ public class GraphHRDAO {
       List<Record> jobRecords = session.run(query, params).list();
       List<Job> jobs = new ArrayList<>();
       for (Record record : jobRecords) {
+        if (record.get("jobId").isNull()) {
+          System.out.println("a");
+        }
         Job job = Job.builder()
             .jobId(record.get("jobId").asInt())
             .jobName(record.get("jobName").asString())
@@ -437,24 +441,71 @@ public class GraphHRDAO {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
           "MATCH (t:Team {teamName: \"" + teamName + "\"}), (lj:Job)\n"
-              + "with t, max(lj.jobId) as maxId"
+              + "with t, max(lj.jobId) as maxId \n"
               + "CREATE (j:Job {title: \"" + title + "\", jobId: maxId + 1})-[:IS_OF]->(t)\n"
-              + "return j.jobId";
+              + "return j.jobId as jobId";
 
       Value params = Values.parameters();
-      return session.run(query, params).list().get(0).get("c").asInt();
+      return session.run(query, params).list().get(0).get("jobId").asInt();
     }
   }
 
-  public void createRequireRelationship(String jobId, String skillName, int rating) {
+  public void createRequireRelationship(Integer jobId, String skillName, int rating) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
-          "MATCH (j:Job {jobId: \"Test\"}), (s:Skill {name: \"Java\"})\n"
-              + "CREATE (j)-[r:REQUIRES {rating: 3}]->(s)\n"
+          "MATCH (j:Job {jobId: " + jobId + "}), (s:Skill {name: \"" + skillName + "\"})\n"
+              + "CREATE (j)-[r:REQUIRES {rating: " + rating + "}]->(s)\n"
               + "return r";
 
       Value params = Values.parameters();
       session.run(query, params);
     }
   }
+
+  public String createEmployee(EmployeeDto employeeDto) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "MATCH (e:Employee)\n"
+              + "WITH max(toInteger(e.employeeId)) + 1 as nextEmployeeId\n"
+              + "CREATE (ne:Employee {employeeId: toString(nextEmployeeId),"
+              + " name: \"" + employeeDto.getName() + "\","
+              + " title: \"" + employeeDto.getTitle() + "\","
+              + " address: \"" + employeeDto.getAddress() + "\","
+              + " sex: \"" + employeeDto.getSex() + "\","
+              + " sibn: \"" + employeeDto.getSibn() + "\","
+              + " pit: \"" + employeeDto.getPit() + "\","
+              + " dateOfBirth: \"" + employeeDto.getDateOfBirth() + "\"})\n"
+              + "RETURN ne.employeeId as employeeId\n";
+
+      Value params = Values.parameters();
+      return session.run(query, params).list().get(0).get("employeeId").asString();
+    }
+  }
+
+  public String createIsARelationship(String employeeId, String roleName) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "MATCH (e:Employee {employeeId: \"" + employeeId + "\"}), (r:Role {name: \"" + roleName
+              + "\"})\n"
+              + "CREATE (e)-[i:IS_A]->(r)\n"
+              + "return type(i) as type";
+
+      Value params = Values.parameters();
+      return session.run(query, params).list().get(0).get("type").asString();
+    }
+  }
+
+  public String createRatesRelationship(String employeeId, String skillName, Integer rating) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "MATCH (e:Employee {employeeId: \"" + employeeId + "\"}), (s:Skill {name: \"" + skillName
+              + "\"})\n"
+              + "CREATE (e)-[r:RATES {rating: " + rating + "}]->(s)\n"
+              + "return type(r) as type";
+
+      Value params = Values.parameters();
+      return session.run(query, params).list().get(0).get("type").asString();
+    }
+  }
+
 }

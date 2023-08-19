@@ -1,18 +1,31 @@
 package com.thunguyen.graphhrservice.services;
 
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.BA;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.QA;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.ROLE_BUSINESS_ANALYST;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.ROLE_DEVELOPER;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.ROLE_TESTER;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SA;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SBA;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SE;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SQA;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SSE;
+
 import com.thunguyen.graphhrservice.dao.GraphHRDAO;
 import com.thunguyen.graphhrservice.models.Employee;
+import com.thunguyen.graphhrservice.models.EmployeeDto;
 import com.thunguyen.graphhrservice.models.Job;
+import com.thunguyen.graphhrservice.models.JobDto;
 import com.thunguyen.graphhrservice.models.Project;
+import com.thunguyen.graphhrservice.models.Rating;
 import com.thunguyen.graphhrservice.models.Skill;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Record;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -64,7 +77,8 @@ public class GraphDBService {
     return getRatingMatrix(ratingRecords, employees, skills);
   }
 
-  private static int[][] getRatingMatrix(List<Record> ratingRecords, List<String> employees, List<String> skills) {
+  private static int[][] getRatingMatrix(List<Record> ratingRecords, List<String> employees,
+      List<String> skills) {
     int employeeSize = employees.size();
     int skillSize = skills.size();
     int[][] matrix = new int[employeeSize][skillSize];
@@ -103,7 +117,8 @@ public class GraphDBService {
     return getRequireMatrix(requireRecords, jobs, skills);
   }
 
-  private static int[][] getRequireMatrix(List<Record> requireRecords, List<Integer> jobs, List<String> skills) {
+  private static int[][] getRequireMatrix(List<Record> requireRecords, List<Integer> jobs,
+      List<String> skills) {
     int jobSize = jobs.size();
     int skillSize = skills.size();
     int[][] matrix = new int[jobSize][skillSize];
@@ -146,7 +161,32 @@ public class GraphDBService {
     return getCombineMatrix(requireMatrix, ratingMatrix);
   }
 
-  public void addJob(Map<String, String> addRequest) {
+  public void addEmployee(EmployeeDto employeeDto) {
+    String employeeId = graphHRDAO.createEmployee(employeeDto);
+    log.info("Employee {} created!", employeeId);
+    String title = employeeDto.getTitle();
+    String roleName = switch (title) {
+      case SA, SSE, SE -> ROLE_DEVELOPER;
+      case SQA, QA -> ROLE_TESTER;
+      case SBA, BA -> ROLE_BUSINESS_ANALYST;
+      default -> "";
+    };
+    graphHRDAO.createIsARelationship(employeeId, roleName);
+    log.info("Employee link to role {} created!", roleName);
+    List<Rating> rates = employeeDto.getRates();
+    rates.forEach(rate -> {
+      graphHRDAO.createRatesRelationship(employeeId, rate.getSkillName(), rate.getRating());
+      log.info("Employee rates skill {} created!", rate.getSkillName());
+    });
+  }
 
+  public void addJob(JobDto jobDto) {
+    Integer jobId = graphHRDAO.createJob(jobDto.getProjectName(), jobDto.getName());
+    log.info("Job {} created!", jobId);
+    List<Rating> requires = jobDto.getRequires();
+    requires.forEach(require -> {
+      graphHRDAO.createRequireRelationship(jobId, require.getSkillName(), require.getRating());
+      log.info("Job requires skill {} created!", require.getSkillName());
+    });
   }
 }
