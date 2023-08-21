@@ -7,7 +7,6 @@ import lombok.Data;
 public class JobDto {
 
   private String name;
-  private String roleName;
   private String projectName;
   private List<Rating> requires;
 }

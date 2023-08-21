@@ -10,6 +10,7 @@ import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SBA;
 import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SE;
 import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SQA;
 import static com.thunguyen.graphhrservice.configs.GraphHRConstants.SSE;
+import static com.thunguyen.graphhrservice.configs.GraphHRConstants.TYPO_QA;
 
 import com.thunguyen.graphhrservice.dao.GraphHRDAO;
 import com.thunguyen.graphhrservice.models.Employee;
@@ -19,6 +20,7 @@ import com.thunguyen.graphhrservice.models.JobDto;
 import com.thunguyen.graphhrservice.models.Project;
 import com.thunguyen.graphhrservice.models.Rating;
 import com.thunguyen.graphhrservice.models.Skill;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,6 +79,12 @@ public class GraphDBService {
     return getRatingMatrix(ratingRecords, employees, skills);
   }
 
+  public int[][] getRatingByEmployeeId(String employeeId, String role) {
+    List<Record> ratingRecords = graphHRDAO.getRatingMatrixByEmployeeId(employeeId, role);
+    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    return getRatingMatrix(ratingRecords, Collections.singletonList(employeeId), skills);
+  }
+
   private static int[][] getRatingMatrix(List<Record> ratingRecords, List<String> employees,
       List<String> skills) {
     int employeeSize = employees.size();
@@ -115,6 +123,12 @@ public class GraphDBService {
     List<Integer> jobs = graphHRDAO.getJob(role).stream().map(Job::getJobId).toList();
     List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
     return getRequireMatrix(requireRecords, jobs, skills);
+  }
+
+  public int[][] getRequireByJobId(Integer jobId, String role) {
+    List<Record> requireRecords = graphHRDAO.getRequireMatrixByJobId(jobId, role);
+    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    return getRequireMatrix(requireRecords, Collections.singletonList(jobId), skills);
   }
 
   private static int[][] getRequireMatrix(List<Record> requireRecords, List<Integer> jobs,
@@ -161,13 +175,25 @@ public class GraphDBService {
     return getCombineMatrix(requireMatrix, ratingMatrix);
   }
 
+  public int[][] getSingleEmployeeRating(String employeeId, String role) {
+    int[][] ratingMatrix = getRatingByEmployeeId(employeeId, role);
+    int[][] requireMatrix = getRequire(role);
+    return getCombineMatrix(requireMatrix, ratingMatrix);
+  }
+
+  public int[][] getSingleJobRating(Integer employeeId, String role) {
+    int[][] ratingMatrix = getRating(role);
+    int[][] requireMatrix = getRequireByJobId(employeeId, role);
+    return getCombineMatrix(requireMatrix, ratingMatrix);
+  }
+
   public void addEmployee(EmployeeDto employeeDto) {
     String employeeId = graphHRDAO.createEmployee(employeeDto);
     log.info("Employee {} created!", employeeId);
     String title = employeeDto.getTitle();
     String roleName = switch (title) {
       case SA, SSE, SE -> ROLE_DEVELOPER;
-      case SQA, QA -> ROLE_TESTER;
+      case SQA, QA, TYPO_QA -> ROLE_TESTER;
       case SBA, BA -> ROLE_BUSINESS_ANALYST;
       default -> "";
     };
@@ -181,7 +207,14 @@ public class GraphDBService {
   }
 
   public void addJob(JobDto jobDto) {
-    Integer jobId = graphHRDAO.createJob(jobDto.getProjectName(), jobDto.getName());
+    String jobName = jobDto.getName();
+    String roleName = switch (jobName) {
+      case SA, SSE, SE -> ROLE_DEVELOPER;
+      case SQA, QA, TYPO_QA -> ROLE_TESTER;
+      case SBA, BA -> ROLE_BUSINESS_ANALYST;
+      default -> "";
+    };
+    Integer jobId = graphHRDAO.createJob(jobDto.getProjectName(), jobName, roleName);
     log.info("Job {} created!", jobId);
     List<Rating> requires = jobDto.getRequires();
     requires.forEach(require -> {

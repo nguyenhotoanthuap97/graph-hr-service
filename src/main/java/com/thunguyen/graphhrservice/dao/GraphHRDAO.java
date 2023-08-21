@@ -87,7 +87,8 @@ public class GraphHRDAO {
   public Employee getEmployeeInfoById(String employeeId) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
-          "match (e:Employee {employeeId: \"" + employeeId + "\"})-[:REPORTS_TO]->(s:Employee)\n"
+          "match (e:Employee {employeeId: \"" + employeeId + "\"}) \n"
+              + "optional match (e)-[:REPORTS_TO]->(s:Employee)\n"
               + "return e.employeeId as employeeId, e.name as name, e.title as title, e.address as address, e.sex as sex, e.sibn as sibn, e.pit as pit, e.dateOfBirth as dateOfBirth, s.name as superiorName\n"
               + "order by toInteger(e.employeeId)";
       Value params = Values.parameters();
@@ -104,7 +105,8 @@ public class GraphHRDAO {
             .sibn(record.get("sibn").asString())
             .pit(record.get("pit").asString())
             .dateOfBirth(record.get("dateOfBirth").asString())
-            .superiorName(record.get("superiorName").asString())
+            .superiorName(record.get("superiorName").asString().equals("null") ? ""
+                : record.get("superiorName").asString())
             .build();
       }
       return null;
@@ -304,9 +306,6 @@ public class GraphHRDAO {
       List<Record> jobRecords = session.run(query, params).list();
       List<Job> jobs = new ArrayList<>();
       for (Record record : jobRecords) {
-        if (record.get("jobId").isNull()) {
-          System.out.println("a");
-        }
         Job job = Job.builder()
             .jobId(record.get("jobId").asInt())
             .jobName(record.get("jobName").asString())
@@ -365,6 +364,20 @@ public class GraphHRDAO {
     }
   }
 
+  public List<Record> getRatingMatrixByEmployeeId(String employeeId, String role) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "match (e:Employee {employeeId: \"" + employeeId + "\"})-[i:IS_A]->(ro:Role {name: \""
+              + role + "\"})\n" +
+              "with e, ro\n" +
+              "match (e)-[r:RATES]->(s:Skill)-[]->(ro)\n" +
+              "with e, r, s\n" +
+              "return e.employeeId as employeeId, s.name as skillName, r.rating as rating\n" +
+              "order by e.employeeId, s.name";
+      Value params = Values.parameters();
+      return session.run(query, params).list();
+    }
+  }
 
   public List<Record> getRequireMatrix() {
     try (Session session = neo4jDriver.session(sessionConfig)) {
@@ -383,6 +396,19 @@ public class GraphHRDAO {
       String query =
           "  match (j:Job {roleName: \"" + role
               + "\"})-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role + "\"})\n" +
+              "      return j.jobId as jobId, s.name as skillName, r.rating as rating\n" +
+              "  order by j.jobId, s.name";
+      Value params = Values.parameters();
+      return session.run(query, params).list();
+    }
+  }
+
+  public List<Record> getRequireMatrixByJobId(Integer jobId, String role) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "  match (j:Job {roleName: \"" + role
+              + "\", jobId: " + jobId + "})-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role
+              + "\"})\n" +
               "      return j.jobId as jobId, s.name as skillName, r.rating as rating\n" +
               "  order by j.jobId, s.name";
       Value params = Values.parameters();
@@ -437,12 +463,13 @@ public class GraphHRDAO {
     }
   }
 
-  public Integer createJob(String teamName, String title) {
+  public Integer createJob(String teamName, String title, String roleName) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
           "MATCH (t:Team {teamName: \"" + teamName + "\"}), (lj:Job)\n"
               + "with t, max(lj.jobId) as maxId \n"
-              + "CREATE (j:Job {title: \"" + title + "\", jobId: maxId + 1})-[:IS_OF]->(t)\n"
+              + "CREATE (j:Job {jobName: \"" + title + "\", jobId: maxId + 1, roleName: \""
+              + roleName + "\"})-[:IS_OF]->(t)\n"
               + "return j.jobId as jobId";
 
       Value params = Values.parameters();

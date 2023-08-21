@@ -6,7 +6,8 @@ public class GraphHRConstants {
   public static final String SSE = "Senior Software Engineer";
   public static final String SE = "Software Engineer";
   public static final String SQA = "Senior Quality Assurance";
-  public static final String QA = "Quality Assuranc";
+  public static final String QA = "Quality Assurance";
+  public static final String TYPO_QA = "Quality Assuranc";
   public static final String SBA = "Senior Business Analyst";
   public static final String BA = "Business Analyst";
 
