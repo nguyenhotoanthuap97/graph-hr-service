@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -59,7 +60,8 @@ public class GraphHRDAO {
   public List<Employee> getEmployeeInfo() {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query = """
-          match (e:Employee)-[:REPORTS_TO]->(s:Employee)
+          match (e:Employee)
+          optional match (e)-[:REPORTS_TO]->(s:Employee)
           return e.employeeId as employeeId, e.name as name, e.title as title, e.address as address, e.sex as sex, e.sibn as sibn, e.pit as pit, e.dateOfBirth as dateOfBirth, s.name as superiorName
           order by toInteger(e.employeeId)""";
       Value params = Values.parameters();
@@ -76,7 +78,8 @@ public class GraphHRDAO {
             .sibn(record.get("sibn").asString())
             .pit(record.get("pit").asString())
             .dateOfBirth(record.get("dateOfBirth").asString())
-            .superiorName(record.get("superiorName").asString())
+            .superiorName(Objects.equals(record.get("superiorName").asString(), "null")
+                ? "" : record.get("superiorName").asString())
             .build();
         employees.add(employee);
       }
@@ -501,6 +504,7 @@ public class GraphHRDAO {
               + " sex: \"" + employeeDto.getSex() + "\","
               + " sibn: \"" + employeeDto.getSibn() + "\","
               + " pit: \"" + employeeDto.getPit() + "\","
+              + " id: \"" + employeeDto.getId() + "\","
               + " dateOfBirth: \"" + employeeDto.getDateOfBirth() + "\"})\n"
               + "RETURN ne.employeeId as employeeId\n";
 

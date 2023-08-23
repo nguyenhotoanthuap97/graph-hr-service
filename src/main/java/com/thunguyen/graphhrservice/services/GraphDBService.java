@@ -187,7 +187,7 @@ public class GraphDBService {
     return getCombineMatrix(requireMatrix, ratingMatrix);
   }
 
-  public void addEmployee(EmployeeDto employeeDto) {
+  public String addEmployee(EmployeeDto employeeDto) {
     String employeeId = graphHRDAO.createEmployee(employeeDto);
     log.info("Employee {} created!", employeeId);
     String title = employeeDto.getTitle();
@@ -204,9 +204,10 @@ public class GraphDBService {
       graphHRDAO.createRatesRelationship(employeeId, rate.getSkillName(), rate.getRating());
       log.info("Employee rates skill {} created!", rate.getSkillName());
     });
+    return employeeId;
   }
 
-  public void addJob(JobDto jobDto) {
+  public Integer addJob(JobDto jobDto) {
     String jobName = jobDto.getName();
     String roleName = switch (jobName) {
       case SA, SSE, SE -> ROLE_DEVELOPER;
@@ -221,5 +222,6 @@ public class GraphDBService {
       graphHRDAO.createRequireRelationship(jobId, require.getSkillName(), require.getRating());
       log.info("Job requires skill {} created!", require.getSkillName());
     });
+    return jobId;
   }
 }
