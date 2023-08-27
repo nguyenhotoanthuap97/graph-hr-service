@@ -48,18 +48,22 @@ public class GraphDBService {
     return projects;
   }
 
-  public List<Map<String, String>> getProjectInfo() {
-    List<Map<String, String>> projects = graphHRDAO.getProjectInfo();
+  public List<Map<String, Object>> getProjectInfo() {
+    List<Map<String, Object>> projects = graphHRDAO.getProjectInfo();
     log.info("Projects info: {}", projects);
     return projects;
   }
 
-  public List<Job> getJob(String teamName) {
+  public List<Job> getJob(String projectName) {
     List<Job> jobs;
-    if (Objects.isNull(teamName)) {
+    if (Objects.isNull(projectName)) {
       jobs = graphHRDAO.getJob();
     } else {
-      jobs = graphHRDAO.getJobByTeam(teamName);
+      jobs = graphHRDAO.getJobByProjectWithEmployment(projectName);
+      List<Job> stacks = graphHRDAO.getJobByProject(projectName);
+      for (int i = 0; i < stacks.size(); i++) {
+        jobs.get(i).setStack(stacks.get(i).getStack());
+      }
     }
     log.info("Jobs: {}", jobs);
     return jobs;

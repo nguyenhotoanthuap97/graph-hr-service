@@ -40,7 +40,7 @@ public class SimilarityEndpoint {
   @ResponseBody
   public List<Job> getEmployeeRecommendedJob(
       @PathVariable(value = "employeeId") String employeeId) {
-    return recommendationService.getRecommendedProjectsForEmployee(employeeId, 20);
+    return recommendationService.getRecommendedJobsForEmployee(employeeId, 20);
   }
 
   @GetMapping(value = "/job/{jobId}")

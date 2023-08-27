@@ -62,7 +62,8 @@ public class GraphHRDAO {
       String query = """
           match (e:Employee)
           optional match (e)-[:REPORTS_TO]->(s:Employee)
-          return e.employeeId as employeeId, e.name as name, e.title as title, e.address as address, e.sex as sex, e.sibn as sibn, e.pit as pit, e.dateOfBirth as dateOfBirth, s.name as superiorName
+          optional match (e)-[]->(:Job)-[]->(t:Project)-[]->(bu:BusinessUnit)
+          return e.employeeId as employeeId, e.name as name, e.title as title, e.address as address, e.sex as sex, e.sibn as sibn, e.pit as pit, e.dateOfBirth as dateOfBirth, s.name as superiorName, t.projectName as projectName, bu.name as buName
           order by toInteger(e.employeeId)""";
       Value params = Values.parameters();
 
@@ -80,6 +81,10 @@ public class GraphHRDAO {
             .dateOfBirth(record.get("dateOfBirth").asString())
             .superiorName(Objects.equals(record.get("superiorName").asString(), "null")
                 ? "" : record.get("superiorName").asString())
+            .projectName(Objects.equals(record.get("projectName").asString(), "null") ? ""
+                : record.get("projectName").asString())
+            .buName(Objects.equals(record.get("buName").asString(), "null") ? ""
+                : record.get("buName").asString())
             .build();
         employees.add(employee);
       }
@@ -92,12 +97,12 @@ public class GraphHRDAO {
       String query =
           "match (e:Employee {employeeId: \"" + employeeId + "\"}) \n"
               + "optional match (e)-[:REPORTS_TO]->(s:Employee)\n"
-              + "return e.employeeId as employeeId, e.name as name, e.title as title, e.address as address, e.sex as sex, e.sibn as sibn, e.pit as pit, e.dateOfBirth as dateOfBirth, s.name as superiorName\n"
+              + "optional match (e)-[]->(j:Job)-[]->(p:Project)-[]->(bu:BusinessUnit)"
+              + "return e.employeeId as employeeId, e.name as name, e.title as title, e.address as address, e.sex as sex, e.sibn as sibn, e.pit as pit, e.dateOfBirth as dateOfBirth, s.name as superiorName, p.projectName as projectName, bu.name as buName\n"
               + "order by toInteger(e.employeeId)";
       Value params = Values.parameters();
 
       List<Record> employeeRecords = session.run(query, params).list();
-      List<Employee> employees = new ArrayList<>();
       for (Record record : employeeRecords) {
         return Employee.builder()
             .id(record.get("employeeId").asString())
@@ -107,12 +112,50 @@ public class GraphHRDAO {
             .sex(record.get("sex").asString())
             .sibn(record.get("sibn").asString())
             .pit(record.get("pit").asString())
+            .projectName(record.get("projectName").asString().equals("null") ? ""
+                : record.get("projectName").asString())
+            .buName(record.get("buName").asString().equals("null") ? ""
+                : record.get("buName").asString())
             .dateOfBirth(record.get("dateOfBirth").asString())
             .superiorName(record.get("superiorName").asString().equals("null") ? ""
                 : record.get("superiorName").asString())
             .build();
       }
       return null;
+    }
+  }
+
+  public List<Employee> getEmployeeInfos() {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query =
+          "match (e:Employee) \n"
+              + "optional match (e)-[:REPORTS_TO]->(s:Employee)\n"
+              + "optional match (e)-[]->(j:Job)-[]->(p:Project)-[]->(bu:BusinessUnit)"
+              + "return e.employeeId as employeeId, e.name as name, e.title as title, e.address as address, e.sex as sex, e.sibn as sibn, e.pit as pit, e.dateOfBirth as dateOfBirth, s.name as superiorName, p.projectName as projectName, bu.name as buName\n"
+              + "order by toInteger(e.employeeId)";
+      Value params = Values.parameters();
+
+      List<Record> employeeRecords = session.run(query, params).list();
+      List<Employee> employees = new ArrayList<>();
+      for (Record record : employeeRecords) {
+        employees.add(Employee.builder()
+            .id(record.get("employeeId").asString())
+            .name(record.get("name").asString())
+            .title(record.get("title").asString())
+            .address(record.get("address").asString())
+            .sex(record.get("sex").asString())
+            .sibn(record.get("sibn").asString())
+            .pit(record.get("pit").asString())
+            .projectName(record.get("projectName").asString().equals("null") ? ""
+                : record.get("projectName").asString())
+            .buName(record.get("buName").asString().equals("null") ? ""
+                : record.get("buName").asString())
+            .dateOfBirth(record.get("dateOfBirth").asString())
+            .superiorName(record.get("superiorName").asString().equals("null") ? ""
+                : record.get("superiorName").asString())
+            .build());
+      }
+      return employees;
     }
   }
 
@@ -179,8 +222,8 @@ public class GraphHRDAO {
   public List<Project> getProject() {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query = """
-          match (t:Team)
-          return t.teamName as name
+          match (t:Project)
+          return t.projectName as name
           order by t.name""";
       Value params = Values.parameters();
 
@@ -196,20 +239,24 @@ public class GraphHRDAO {
     }
   }
 
-  public List<Map<String, String>> getProjectInfo() {
+  public List<Map<String, Object>> getProjectInfo() {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query = """
-          match (t:Team)-[]->(bu:BusinessUnit)
-          return t.teamName as teamName, bu.name as buName
-          order by t.teamName""";
+          match (j:Job)-[]->(t:Project)-[]->(bu:BusinessUnit)
+          optional match (e:Employee)-[]->(j)
+          return t.projectName as projectName, t.description as description, bu.name as buName, count(j) as jobCount, count(e) as occupantCount
+          order by t.projectName""";
       Value params = Values.parameters();
 
       List<Record> projectRecords = session.run(query, params).list();
-      List<Map<String, String>> projects = new ArrayList<>();
+      List<Map<String, Object>> projects = new ArrayList<>();
       for (Record record : projectRecords) {
-        Map<String, String> project = new HashMap<>();
-        project.put("teamName", record.get("teamName").asString());
+        Map<String, Object> project = new HashMap<>();
+        project.put("projectName", record.get("projectName").asString());
+        project.put("description", record.get("description").asString());
         project.put("buName", record.get("buName").asString());
+        project.put("jobCount", record.get("jobCount").asInt());
+        project.put("occupantCount", record.get("occupantCount").asInt());
         projects.add(project);
       }
       return projects;
@@ -261,8 +308,11 @@ public class GraphHRDAO {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query = """
           match (j:Job)
-          return j.jobId as jobId, j.jobName as jobName
-          order by j.jobId""";
+          optional match (j)-[]->(s:Skill)
+          with j.jobId as jobId, j.jobName as jobName, s.name as skillName
+          unwind skillName as s
+          RETURN jobId, jobName, apoc.text.join(collect(s), ', ') AS skillName
+          order by jobId""";
       Value params = Values.parameters();
 
       List<Record> jobRecords = session.run(query, params).list();
@@ -271,6 +321,7 @@ public class GraphHRDAO {
         Job job = Job.builder()
             .jobId(record.get("jobId").asInt())
             .jobName(record.get("jobName").asString())
+            .stack(record.get("skillName").asString())
             .build();
         jobs.add(job);
       }
@@ -278,10 +329,59 @@ public class GraphHRDAO {
     }
   }
 
+  public List<Job> getJobStacks() {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query = """
+          match (j:Job)
+          optional match (j)-[]->(s:Skill)
+          with j.jobId as jobId, j.jobName as jobName, s.name as skillName
+          unwind skillName as s
+          return jobId, jobName, apoc.text.join(collect(s), ', ') AS skillName
+          order by jobId""";
+      Value params = Values.parameters();
+
+      List<Record> jobRecords = session.run(query, params).list();
+      List<Job> jobs = new ArrayList<>();
+      for (Record record : jobRecords) {
+        jobs.add(Job.builder()
+            .jobId(record.get("jobId").asInt())
+            .jobName(record.get("jobName").asString())
+            .stack(record.get("skillName").asString())
+            .build());
+      }
+      return jobs;
+    }
+  }
+
+  public List<Job> getJobInfos() {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query = """
+          match (j:Job)-[]->(p:Project)-[]->(bu:BusinessUnit)
+          optional match (j)<-[]-(e:Employee)
+          return j.jobId as jobId, j.jobName as jobName, p.projectName as projectName, bu.name as buName, e.name as employee
+          order by jobId""";
+      Value params = Values.parameters();
+
+      List<Record> jobRecords = session.run(query, params).list();
+      List<Job> jobs = new ArrayList<>();
+      for (Record record : jobRecords) {
+        jobs.add(Job.builder()
+            .jobId(record.get("jobId").asInt())
+            .jobName(record.get("jobName").asString())
+            .projectName(record.get("projectName").asString())
+            .buName(record.get("buName").asString())
+            .employee(Objects.equals(record.get("employee").asString(), "null")
+                ? "" : record.get("employee").asString())
+            .build());
+      }
+      return jobs;
+    }
+  }
+
   public Job getJobInfoByJobId(Integer jobId) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
-      String query = "match (j:Job {jobId: " + jobId + "})-[]->(t:Team)-[]->(b:BusinessUnit) \n"
-          + "return j.jobId as jobId, j.jobName as jobName, t.teamName as teamName, b.name as buName \n"
+      String query = "match (j:Job {jobId: " + jobId + "})-[]->(t:Project)-[]->(b:BusinessUnit) \n"
+          + "return j.jobId as jobId, j.jobName as jobName, t.projectName as projectName, b.name as buName \n"
           + "order by j.jobId";
       Value params = Values.parameters();
 
@@ -290,7 +390,7 @@ public class GraphHRDAO {
         return Job.builder()
             .jobId(record.get("jobId").asInt())
             .jobName(record.get("jobName").asString())
-            .teamName(record.get("teamName").asString())
+            .projectName(record.get("projectName").asString())
             .buName(record.get("buName").asString())
             .build();
       }
@@ -298,12 +398,15 @@ public class GraphHRDAO {
     }
   }
 
-  public List<Job> getJobByTeam(String teamName) {
+  public List<Job> getJobByProject(String projectName) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
-      String query = "match (j:Job)-[]->(t:Team)\n" +
-          "where t.teamName = \"" + teamName + "\"\n" +
-          "return j.jobId as jobId, j.jobName as jobName\n" +
-          "order by j.jobId";
+      String query = "match (j:Job)-[]->(t:Project)\n" +
+          "where t.projectName = \"" + projectName + "\"\n" +
+          "optional match (s:Skill)<-[]-(j) \n" +
+          "with j.jobId as jobId, j.jobName as jobName, s.name as skillName\n" +
+          "unwind skillName as s\n" +
+          "RETURN jobId, jobName, apoc.text.join(collect(s), ', ') AS skillName \n" +
+          "order by jobId";
       Value params = Values.parameters();
 
       List<Record> jobRecords = session.run(query, params).list();
@@ -312,6 +415,33 @@ public class GraphHRDAO {
         Job job = Job.builder()
             .jobId(record.get("jobId").asInt())
             .jobName(record.get("jobName").asString())
+            .projectName(projectName)
+            .stack(record.get("skillName").asString())
+            .build();
+        jobs.add(job);
+      }
+      return jobs;
+    }
+  }
+
+  public List<Job> getJobByProjectWithEmployment(String projectName) {
+    try (Session session = neo4jDriver.session(sessionConfig)) {
+      String query = "match (j:Job)-[]->(t:Project)\n" +
+          "where t.projectName = \"" + projectName + "\"\n" +
+          "optional match (j)<-[]-(e:Employee)\n" +
+          "return j.jobId as jobId, j.jobName as jobName, e.name as employee\n" +
+          "order by jobId";
+      Value params = Values.parameters();
+
+      List<Record> jobRecords = session.run(query, params).list();
+      List<Job> jobs = new ArrayList<>();
+      for (Record record : jobRecords) {
+        Job job = Job.builder()
+            .jobId(record.get("jobId").asInt())
+            .jobName(record.get("jobName").asString())
+            .projectName(projectName)
+            .employee(Objects.equals(record.get("employee").asString(), "null")
+                ? "" : record.get("employee").asString())
             .build();
         jobs.add(job);
       }
@@ -466,10 +596,10 @@ public class GraphHRDAO {
     }
   }
 
-  public Integer createJob(String teamName, String title, String roleName) {
+  public Integer createJob(String projectName, String title, String roleName) {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
-          "MATCH (t:Team {teamName: \"" + teamName + "\"}), (lj:Job)\n"
+          "MATCH (t:Project {projectName: \"" + projectName + "\"}), (lj:Job)\n"
               + "with t, max(lj.jobId) as maxId \n"
               + "CREATE (j:Job {jobName: \"" + title + "\", jobId: maxId + 1, roleName: \""
               + roleName + "\"})-[:IS_OF]->(t)\n"

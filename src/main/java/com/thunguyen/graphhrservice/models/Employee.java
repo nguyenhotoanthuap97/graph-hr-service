@@ -16,4 +16,6 @@ public class Employee {
     private String pit;
     private String dateOfBirth;
     private String superiorName;
+    private String projectName;
+    private String buName;
 }

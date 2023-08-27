@@ -8,4 +8,7 @@ import lombok.Data;
 public class Project {
 
     private String name;
+    private String description;
+    private int jobCount;
+    private int headCount;
 }

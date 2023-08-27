@@ -7,13 +7,13 @@ import com.thunguyen.graphhrservice.models.Job;
 import com.thunguyen.graphhrservice.models.JobDto;
 import com.thunguyen.graphhrservice.models.Project;
 import com.thunguyen.graphhrservice.models.Skill;
+import com.thunguyen.graphhrservice.services.Generator;
 import com.thunguyen.graphhrservice.services.GraphDBService;
 import com.thunguyen.graphhrservice.services.RecommendationService;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.aggregation.ArrayOperators.In;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +31,7 @@ public class GraphHREndpoint {
   private final GraphDBService graphHRService;
   private final RecommendationService recommendationService;
   private final GraphHRDAO graphHRDAO;
+  private final Generator generator;
 
   @GetMapping(value = "/employee")
   @ResponseBody
@@ -52,8 +53,8 @@ public class GraphHREndpoint {
 
   @GetMapping(value = "/job")
   @ResponseBody
-  private List<Job> getJob(@RequestParam(required = false) String teamName) {
-    return graphHRService.getJob(teamName);
+  private List<Job> getJob(@RequestParam(required = false, name = "teamName") String projectName) {
+    return graphHRService.getJob(projectName);
   }
 
   @GetMapping(value = "/job/requirement")
@@ -76,7 +77,7 @@ public class GraphHREndpoint {
 
   @GetMapping(value = "/team-info")
   @ResponseBody
-  private List<Map<String, String>> getProjectInfo() {
+  private List<Map<String, Object>> getProjectInfo() {
     return graphHRService.getProjectInfo();
   }
 
@@ -100,5 +101,13 @@ public class GraphHREndpoint {
     String employeeId = graphHRService.addEmployee(employeeDto);
     recommendationService.buildImprovedSimOfflineMatrixForEmployee(employeeId);
     return employeeId;
+  }
+
+  @GetMapping(value = "/occupies")
+  @ResponseBody
+  private void occupies() {
+    Map<Integer, Object[]> occupies = generator.getEmployeeJobRelationship();
+    generator.writeData("Data", occupies,
+        "D:/Study/Master/Thesis/Data/Final3/1000/OCCUPIES.xlsx");
   }
 }

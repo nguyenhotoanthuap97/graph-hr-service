@@ -215,32 +215,39 @@ public class RecommendationService {
     log.info("Offline Pearson calculation DONE");
   }
 
-  public List<Job> getRecommendedProjectsForEmployee(String employeeId, int recommendSize) {
-    List<Similarity> sortedSimilarities = simGraphDAO.getSimilaritiesForEmployeeId(employeeId)
+  public List<Job> getRecommendedJobsForEmployee(String employeeId, int recommendSize) {
+    List<Integer> sortedSimilarities = simGraphDAO.getSimilaritiesForEmployeeId(employeeId)
         .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
+        .map(sim -> sim.getSimilarityId().getJobId())
         .toList();
     int size = Math.min(sortedSimilarities.size(), recommendSize);
-    List<Similarity> topK = sortedSimilarities.subList(0, size);
-    List<Job> response = topK.stream()
-        .map(sim -> graphHRDAO.getJobInfoByJobId(sim.getSimilarityId().getJobId()))
-        .toList();
+    List<Integer> topK = sortedSimilarities.subList(0, size);
+    List<Job> jobs = graphHRDAO.getJobInfos();
+    List<Job> jobsWithStack = graphHRDAO.getJobStacks();
+    for (int i = 0; i < jobsWithStack.size(); i++) {
+      jobs.get(i).setStack(jobsWithStack.get(i).getStack());
+    }
+    List<Job> response = new ArrayList<>();
+    for (Integer jobId : topK) {
+      response.add(jobs.stream().filter(j -> j.getJobId().equals(jobId)).toList().get(0));
+    }
     return response;
   }
 
   public List<Employee> getRecommendedEmployeesForJob(Integer jobId, int recommendSize) {
-    List<Similarity> sortedSimilarities = simGraphDAO.getSimilaritiesForJobId(jobId)
+    List<String> sortedSimilarities = simGraphDAO.getSimilaritiesForJobId(jobId)
         .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
+        .map(sim -> sim.getSimilarityId().getEmployeeId())
         .toList();
 
     int size = Math.min(sortedSimilarities.size(), recommendSize);
 
-    List<Similarity> topK = sortedSimilarities.subList(0, size);
+    List<String> topK = sortedSimilarities.subList(0, size);
+    List<Employee> employees = graphHRDAO.getEmployeeInfos();
     List<Employee> response = new ArrayList<>();
-    topK.forEach(sim -> {
-      Employee employee = graphHRDAO.getEmployeeInfoById(sim.getSimilarityId().getEmployeeId());
-      response.add(employee);
-    });
-
+    for (String employeeId : topK) {
+      response.add(employees.stream().filter(e -> e.getId().equals(employeeId)).toList().get(0));
+    }
     return response;
   }
 }
