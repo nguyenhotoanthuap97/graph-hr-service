@@ -225,7 +225,9 @@ public class RecommendationService {
     List<Job> jobs = graphHRDAO.getJobInfos();
     List<Job> jobsWithStack = graphHRDAO.getJobStacks();
     for (int i = 0; i < jobsWithStack.size(); i++) {
-      jobs.get(i).setStack(jobsWithStack.get(i).getStack());
+      Job jobWithStack = jobsWithStack.get(i);
+      jobs.stream().filter(job -> jobWithStack.getJobId().equals(job.getJobId())).toList().get(0)
+          .setStack(jobWithStack.getStack());
     }
     List<Job> response = new ArrayList<>();
     for (Integer jobId : topK) {
