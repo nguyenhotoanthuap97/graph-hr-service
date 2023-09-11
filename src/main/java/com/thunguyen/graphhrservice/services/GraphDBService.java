@@ -62,7 +62,9 @@ public class GraphDBService {
       jobs = graphHRDAO.getJobByProjectWithEmployment(projectName);
       List<Job> stacks = graphHRDAO.getJobByProject(projectName);
       for (int i = 0; i < stacks.size(); i++) {
-        jobs.get(i).setStack(stacks.get(i).getStack());
+        Job jobWithStack = stacks.get(i);
+        jobs.stream().filter(job -> jobWithStack.getJobId().equals(job.getJobId())).toList().get(0)
+            .setStack(jobWithStack.getStack());
       }
     }
     log.info("Jobs: {}", jobs);
