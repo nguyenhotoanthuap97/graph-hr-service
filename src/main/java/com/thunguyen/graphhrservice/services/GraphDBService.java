@@ -81,13 +81,13 @@ public class GraphDBService {
   public int[][] getRating(String role) {
     List<Record> ratingRecords = graphHRDAO.getRatingMatrix(role);
     List<String> employees = graphHRDAO.getEmployee(role).stream().map(Employee::getId).toList();
-    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    List<String> skills = graphHRDAO.getSkill().stream().map(Skill::getName).toList();
     return getRatingMatrix(ratingRecords, employees, skills);
   }
 
   public int[][] getRatingByEmployeeId(String employeeId, String role) {
     List<Record> ratingRecords = graphHRDAO.getRatingMatrixByEmployeeId(employeeId, role);
-    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    List<String> skills = graphHRDAO.getSkill().stream().map(Skill::getName).toList();
     return getRatingMatrix(ratingRecords, Collections.singletonList(employeeId), skills);
   }
 
@@ -127,13 +127,13 @@ public class GraphDBService {
   public int[][] getRequire(String role) {
     List<Record> requireRecords = graphHRDAO.getRequireMatrix(role);
     List<Integer> jobs = graphHRDAO.getJob(role).stream().map(Job::getJobId).toList();
-    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    List<String> skills = graphHRDAO.getSkill().stream().map(Skill::getName).toList();
     return getRequireMatrix(requireRecords, jobs, skills);
   }
 
   public int[][] getRequireByJobId(Integer jobId, String role) {
     List<Record> requireRecords = graphHRDAO.getRequireMatrixByJobId(jobId, role);
-    List<String> skills = graphHRDAO.getSkill(role).stream().map(Skill::getName).toList();
+    List<String> skills = graphHRDAO.getSkill().stream().map(Skill::getName).toList();
     return getRequireMatrix(requireRecords, Collections.singletonList(jobId), skills);
   }
 

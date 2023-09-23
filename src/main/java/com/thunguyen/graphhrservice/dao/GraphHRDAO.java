@@ -488,7 +488,7 @@ public class GraphHRDAO {
       String query =
           "match (e:Employee)-[i:IS_A]->(ro:Role {name: \"" + role + "\"})\n" +
               "with e, ro\n" +
-              "match (e)-[r:RATES]->(s:Skill)-[]->(ro)\n" +
+              "match (e)-[r:RATES]->(s:Skill)\n" +
               "with e, r, s\n" +
               "return e.employeeId as employeeId, s.name as skillName, r.rating as rating\n" +
               "order by e.employeeId, s.name";
@@ -503,7 +503,7 @@ public class GraphHRDAO {
           "match (e:Employee {employeeId: \"" + employeeId + "\"})-[i:IS_A]->(ro:Role {name: \""
               + role + "\"})\n" +
               "with e, ro\n" +
-              "match (e)-[r:RATES]->(s:Skill)-[]->(ro)\n" +
+              "match (e)-[r:RATES]->(s:Skill)\n" +
               "with e, r, s\n" +
               "return e.employeeId as employeeId, s.name as skillName, r.rating as rating\n" +
               "order by e.employeeId, s.name";
@@ -528,7 +528,7 @@ public class GraphHRDAO {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
           "  match (j:Job {roleName: \"" + role
-              + "\"})-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role + "\"})\n" +
+              + "\"})-[r:REQUIRES]->(s:Skill)\n" +
               "      return j.jobId as jobId, s.name as skillName, r.rating as rating\n" +
               "  order by j.jobId, s.name";
       Value params = Values.parameters();
@@ -540,8 +540,7 @@ public class GraphHRDAO {
     try (Session session = neo4jDriver.session(sessionConfig)) {
       String query =
           "  match (j:Job {roleName: \"" + role
-              + "\", jobId: " + jobId + "})-[r:REQUIRES]->(s:Skill)-[]->(ro:Role {name: \"" + role
-              + "\"})\n" +
+              + "\", jobId: " + jobId + "})-[r:REQUIRES]->(s:Skill)\n" +
               "      return j.jobId as jobId, s.name as skillName, r.rating as rating\n" +
               "  order by j.jobId, s.name";
       Value params = Values.parameters();
