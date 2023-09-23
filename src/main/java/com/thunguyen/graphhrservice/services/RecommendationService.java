@@ -216,8 +216,9 @@ public class RecommendationService {
   }
 
   public List<Job> getRecommendedJobsForEmployee(String employeeId, int recommendSize) {
-    List<Integer> sortedSimilarities = simGraphDAO.getSimilaritiesForEmployeeId(employeeId)
-        .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
+    List<Integer> sortedSimilarities = simGraphDAO.getSimilaritiesForEmployeeId(employeeId).stream()
+        .filter(sim -> sim.getSimScore() >= 0.5)
+        .sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
         .map(sim -> sim.getSimilarityId().getJobId())
         .toList();
     int size = Math.min(sortedSimilarities.size(), recommendSize);
@@ -237,8 +238,9 @@ public class RecommendationService {
   }
 
   public List<Employee> getRecommendedEmployeesForJob(Integer jobId, int recommendSize) {
-    List<String> sortedSimilarities = simGraphDAO.getSimilaritiesForJobId(jobId)
-        .stream().sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
+    List<String> sortedSimilarities = simGraphDAO.getSimilaritiesForJobId(jobId).stream()
+        .filter(sim -> sim.getSimScore() >= 0.5)
+        .sorted((sim1, sim2) -> Double.compare(sim2.getSimScore(), sim1.getSimScore()))
         .map(sim -> sim.getSimilarityId().getEmployeeId())
         .toList();
 
